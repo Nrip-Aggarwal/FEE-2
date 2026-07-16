@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<style>
+    body{
+        background-size: cover;
+        background-image:url(https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTdehXmRWAYqEz8AB03CoNbWvofwprA3y21FOXF-WCaYz1Fx69gcPB8Rpg&s=10);
+    }
+    nav{
+        display: flex;
+        justify-content: space-between;
+    }
+    .box{
+        width:300px;
+        height: 300px;
+        border: 2px solid red;
+        display: flex;
+        justify-content: center;
+        flex-direction: row;
+        align-items: center;
+        /* flex-flow:flex wrap + flex direction */
+        /* flex-direction: column; */
+        gap:10px;
+    }
+    .childbox{
+        width: 30px;
+        height:30px;
+        border:2px solid black;
+        
+    }
+    .container-grid{
+
+        width: 500px;
+        height: 500px;
+        border: 2px solid black;
+        display: grid;
+        grid-template-columns:repeat(4,1fr);
+        grid-template-rows: repeat(4,1fr);
+        gap:10px;
+        /* place-items:center; */
+    }
+
+    .childgrid{
+        height: 100px;
+        width: 100px;
+        border: 2px solid red;
+        background-color:violet ;
+
+    }
+
+    
+.boxy{
+    width:320px;
+    background:white;
+    border:2px solid black;
+    border-radius:10px;
+    padding:20px;
+}
+
+
+.password-box{
+    position:relative;
+}
+
+.password-box input{
+    padding-right:40px; /* Space for the icon */
+}
+
+.password-box abbr{
+    position:relative;
+    left:-30px;
+    top:35%;
+    /* transform:translateY(-50%); */
+    text-decoration:none;
+    cursor:help;
+    font-size:18px;
+}
+
+
+a:hover{
+    color:yellow;
+}
+
+.notification:hover {
+    font-size: 2rem;
+
+}
+</style>
+<body>
+    <nav>
+        <div class="bmw-logo"> bmw
+        <img style="height: 15px;" src="data:image/jpeg;base64,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" alt="BMW Logo"></div>
+        <a href="https://course.testpad.chitkara.edu.in/user-dashboard">Home</a>
+        <a href="lec1.html">Lec 1</a> 
+        <a href="form.html">form</a>
+        <a href="#com">Contacts</a>
+        <div class="notification">
+            <i class="fa-solid fa-bell"></i>
+        </div>
+    </nav>
+    <hr>
+    <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Fuga beatae repellat, perferendis architecto quaerat molestias sunt repellendus deserunt incidunt possimus minus, voluptas illo dolorum quia velit. Voluptatum quas non animi beatae ipsam culpa placeat cum magnam autem dolores, explicabo itaque quisquam, rerum id iure doloribus aut laudantium commodi tenetur. Nesciunt iure, laborum excepturi et nihil praesentium, suscipit illo similique repellat facilis modi magni maiores sed ea est blanditiis nulla nemo quis, fugit nostrum itaque reprehenderit numquam debitis? Asperiores repellendus blanditiis sit tempore recusandae, quis obcaecati nemo ratione officiis ut, dicta possimus beatae ullam iusto consequatur hic similique? Est, suscipit consequatur?</p>
+
+    <img style="height: 250px;width: 300px;" src="bmw-s-1000-rr-5k-6w-1920x1080.jpg" alt="">
+<br><br>
+    <div class="box">
+        <div class="childbox";>1</div>
+        <div class="childbox">2</div>
+        <div class="childbox">3</div>
+        <div class="childbox">4</div>
+        <div class="childbox">5</div>
+    </div>
+<br><br>
+   <h1>GRIDS</h1>
+    <p>introduction to grid</p>
+
+    <div class="container-grid">
+        <div class="childgrid"></div>
+        <div class="childgrid"></div>
+        <div class="childgrid"></div>
+        <div class="childgrid"></div>
+        <div class="childgrid"></div>
+        <div class="childgrid"></div>
+        <div class="childgrid"></div>
+        <div class="childgrid"></div>
+        <div class="childgrid"></div>
+        <div class="childgrid"></div>
+        <div class="childgrid"></div>
+        <div class="childgrid"></div>
+        <div class="childgrid"></div>
+        <div class="childgrid"></div>
+        <div class="childgrid"></div>
+        <div class="childgrid"></div>
+    </div>
+
+    <br><br><br>   
+<div class="boxy">
+    <form>
+        <h2>Login</h2>
+
+        <label>Email</label><br>
+        <input type="email" placeholder="Enter your email"><br>
+
+        <label>Password</label>
+        <div class="password-box">
+            <input type="password" placeholder="Enter password">
+            <abbr title="Password must be at least 8 characters">🔒</abbr>
+        </div>
+
+        <button type="submit">Login</button>
+    </form>
+</div>
+ 
+    <h2>Contacts</h2>
+    <p id="com">write comments</p>
+    <input height="100px"width="200px" type="textarea" placeholder="write something.. " >
+</body>
+</html>
