@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSS Demo</title>
+
+<style>
+
+/* ===========================
+   General Styling
+=========================== */
+
+body{
+    font-family: Arial, sans-serif;
+    margin:40px;
+    background-color: darkgray;
+}
+
+h1{
+    text-align:center;
+}
+
+section{
+    margin-top:60px;
+}
+
+/* ===========================
+   Pseudo Classes
+=========================== */
+
+button{
+    padding:12px 25px;
+    font-size:18px;
+    cursor:pointer;
+    transition:.3s;
+}
+
+/* Mouse Hover */
+button:hover{
+    background:blue;
+    color:white;
+}
+
+/* While Clicking */
+button:active{
+    transform:scale(.9);
+}
+
+/* Input Focus */
+
+input{
+    padding:10px;
+    width:250px;
+}
+
+input:focus{
+    border:3px solid red;
+    outline:none;
+}
+
+/* Link */
+
+a:link{
+    color:green;
+}
+
+a:visited{
+    color:purple;
+}
+
+/* First Child */
+
+ul li:first-child{
+    color:red;
+}
+
+/* Last Child */
+
+ul li:last-child{
+    color:blue;
+}
+
+/* Second Child */
+
+ul li:nth-child(2){
+    color:orange;
+}
+
+
+/* ===========================
+   Pseudo Elements
+=========================== */
+
+h2::before{
+    content:"⭐ ";
+}
+
+h2::after{
+    content:" ✔";
+}
+
+p::first-letter{
+    font-size:35px;
+    color:red;
+}
+
+p::first-line{
+    color:blue;
+}
+
+::selection{
+    background:black;
+    color:white;
+}
+
+
+/* ===========================
+   Position
+=========================== */
+
+.container{
+    width:500px;
+    height:300px;
+    border:3px solid black;
+    position:relative;
+    margin-top:30px;
+}
+
+/* Relative */
+
+.relative{
+    width:100px;
+    height:100px;
+    background:green;
+    position:relative;
+    top:20px;
+    left:20px;
+}
+
+/* Absolute */
+
+.absolute{
+    width:100px;
+    height:100px;
+    background:orange;
+    position:absolute;
+    top:20px;
+    right:20px;
+}
+
+/* Fixed */
+
+.fixed{
+    width:120px;
+    height:50px;
+    background:red;
+    color:white;
+    text-align:center;
+    line-height:50px;
+    position:fixed;
+    bottom:40px;
+    right:50px;
+}
+
+/* Sticky */
+
+.sticky{
+    background:yellow;
+    padding:15px;
+    position:sticky;
+    top:0px;
+}
+
+/* ===========================
+   z-index
+=========================== */
+
+.box1{
+    width:150px;
+    height:150px;
+    background:red;
+    position:absolute;
+    top:120px;
+    left:80px;
+    z-index:1;
+}
+
+.box2{
+    width:150px;
+    height:150px;
+    background:blue;
+    position:absolute;
+    top:170px;
+    left:150px;
+    z-index:2;
+    color:white;
+}
+
+</style>
+
+</head>
+<body>
+
+<h1>CSS Practical Demo</h1>
+
+<!-- Sticky -->
+
+<div class="sticky">
+    I am Sticky Navigation
+</div>
+
+<!-- Pseudo Classes -->
+
+<section>
+
+<h2>Pseudo Classes</h2>
+
+<button>Hover & Click Me</button>
+
+<br><br>
+
+<input type="text" placeholder="Click Here">
+
+<br><br>
+
+<a href="https://google.com" target="_blank">Google Link</a>
+
+<ul>
+    <li>Apple</li>
+    <li>Mango</li>
+    <li>Banana</li>
+    <li>Orange</li>
+</ul>
+
+</section>
+
+<!-- Pseudo Elements -->
+
+<section>
+
+<h2>Pseudo Elements</h2>
+
+<p>
+Lorem ipsum dolor sit amet consectetur adipisicing elit.
+Quisquam vero laboriosam molestiae asperiores aliquam
+suscipit, dolores iste placeat rerum dignissimos.
+</p>
+
+</section>
+
+<!-- Position -->
+
+<section>
+
+<h2>Position Example</h2>
+
+<div class="container">
+
+<div class="relative">Relative</div>
+
+<div class="absolute">Absolute</div>
+
+</div>
+
+</section>
+
+<!-- z-index -->
+
+<section>
+
+<h2>z-index Example</h2>
+
+<div class="container">
+
+<div class="box1">
+</div>
+
+<div class="box2">
+</div>
+
+</div>
+
+</section>
+
+<!-- Fixed -->
+
+<div class="fixed">
+Fixed Box
+</div>
+
+<br><br><br><br><br><br><br><br><br><br><br><br>
+
+<p>
+Scroll the page to observe the <b>Sticky</b> navigation and the <b>Fixed</b> box in action.
+</p>
+
+</body>
+</html>
