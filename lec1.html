@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FEE 2</title>
+    <link rel="stylesheet" href="lec1.css">
+    <style>
+        *{
+            margin: 0px;
+            padding: 0px;
+        }
+        body{
+            scroll-behavior: smooth;
+        }
+
+        .box{
+    border: 2px solid tomato;
+    background-color: crimson;
+    height: 300px;
+    width: 600px;
+    }
+
+.box-child{
+    border: 2px solid greenyellow;
+    background-color: aqua;
+    height: 5em;
+    width: 10em;
+    margin: 100px;
+
+}
+.box2{
+    height:100vh;
+    width: 100vw;
+    background-image:url(bmw-s-1000-rr-5k-6w-1920x1080.jpg);
+    background-size:cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+.box3{
+     height:100vh;
+    width: 100vw;
+    background-color: blue;
+    background-size:cover;
+    background-position: center;
+}
+
+    </style>
+</head>
+<body>
+    <h1>
+        Lec 1
+    </h1>
+    <a href="#contact">Go to contacts</a>
+    <p>
+        Yele pehla paragraph pehle hi din kya horah hai
+        <br>
+
+        kaafi saare spaces ek white space me convert hojaege
+    </p>
+
+    <pre>
+        1 
+          1
+            1
+    </pre>
+    <p>
+        to copy the content press <kbd>cntrl</kbd><kbd>+</kbd><kbd>c</kbd> on the content u want to copy
+    </p>
+    <!-- <p>comment that u can do it u are worth it</p> -->
+    <abbr title="you can do it">yes you can</abbr><br><br>
+    <a href="https://www.rockstargames.com/VI">GTA 6</a> <br><br>
+    <!-- give download link for FEE.pdf -->
+    <a href="FEE.pdf" download>Download FEE</a>
+
+    <br><br>
+    <s>is this with slash</s>
+    <a href="tel:">phone</a>
+    <!-- ul>li*3 used here -->
+    <ol type="a" start="27"><b style="font-size: larger;">Different Foods</b>
+        <br>    
+        <br>
+        <li>fruits</li>
+        <ol>
+            <li>banana</li>
+            <li>apple</li>
+            <li>cherry</li>
+        </ol>
+        <br>
+        <li>vegetable</li>
+        <ol>
+            <li>capsicum</li>
+            <li>carrot</li>
+            <li>onion</li>
+        </ol>
+        <li>dairy</li>
+        <ol>
+            <li>milk</li>
+            <li>yogurt</li>
+            <li>paneer</li>
+        </ol>
+    </ol>
+
+    <!-- using iframe -->
+    <iframe src="https://www.rockstargames.com/VI" width="1000" height="400" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+    <p id="contact">Lorem, ipsum dolor sit amet consectetur adipisicing elit. Saepe optio eveniet sunt necessitatibus culpa impedit ad nam soluta, totam, obcaecati earum magnam autem explicabo tempore! Velit consequuntur excepturi ipsa amet placeat cum architecto, rem enim est maxime veniam vitae quia quibusdam porro odio earum doloremque nisi ad pariatur, libero quas. Qui, neque quo corporis deserunt quos quasi voluptas accusantium, recusandae earum harum eligendi, ea ipsam at eos! Doloremque nobis consequatur vitae hic aliquam temporibus nam sint, dolores sapiente cupiditate omnis, voluptatem dolore sunt consequuntur quae accusamus nulla voluptatibus, ipsa molestias nisi quaerat est eligendi ipsum. Dicta vitae dolores provident dignissimos!</p>
+
+    <br><br>
+    <!-- make a table and use rowspan and colspan in it -->
+    <table border="1">
+        <tr>
+            <th rowspan="2">Name</th>
+            <th colspan="2">Marks</th>
+        </tr>
+        <tr>
+            <th>Maths</th>
+            <th>Science</th>
+        </tr>
+        <tr>
+            <td>John</td>
+            <td>90</td>
+            <td>85</td>
+        </tr>
+        <tr>
+            <td>Jane</td>
+            <td>95</td>
+            <td>80</td>
+        </tr>
+   </table>
+
+   <br><br>
+        <progress value="50" max="100"></progress>
+        <details>
+            I am worth it
+            <summary>
+                yes i can
+            </summary>
+        </details>
+    
+    <!-- rem em vw vh % relational -->
+     <!-- px cm inch -->
+
+     <div class="box" style="margin: 20px;"> BOX
+        <div class="box-child"> BOX CHILD
+        </div>
+     </div>
+
+     <ul class="list" style="padding-left: 25px;list-style-position: inside;list-style-type: square;">
+        <li>toys</li>
+        <li>books</li>
+        <li>cards</li>
+     </ul>
+
+     <div class="box2">
+        <h1 style="padding: 30px; color:darkred;">Chitkara University</h1>
+     </div>
+     <div class="box3"></div>
+     
+</body>
+</html>
