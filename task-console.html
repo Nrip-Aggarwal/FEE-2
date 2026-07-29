@@ -1,0 +1,829 @@
+<!--
+  TASK://CONSOLE
+  A single-file to-do list app styled like a sci-fi terminal.
+  Everything (HTML structure, CSS styling, and JS behavior) lives in this
+  one file: styles in the <style> block below, and app logic in the
+  <script> block near the bottom.
+
+  Core features implemented in the JS:
+    - Add a new "directive" (task)
+    - Edit a directive's text in place
+    - Mark a directive as complete (strikethrough + dimmed)
+    - Mark a directive as "priority" (important, highlighted in coral)
+    - Delete a directive
+    - Live search/filter by text
+    - Toggle a "priority only" filter
+    - A running count of total directives and an empty-state message
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TO DO LIST</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;900&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+  /* ---------- Design tokens ----------
+     Centralized colors/fonts as CSS custom properties so the whole
+     "dark terminal" theme can be tweaked from one place. */
+  :root {
+    /* Background layers, darkest to lightest, used to create depth
+       (page background -> input panels -> task cards). */
+    --bg: #08090d;
+    --bg-panel: #0f1119;
+    --bg-card: #12141d;
+
+    /* Border colors: a subtle default and a brighter "active/hover" version. */
+    --border: rgba(139, 107, 255, 0.28);
+    --border-strong: rgba(139, 107, 255, 0.65);
+
+    /* Accent colors: violet = primary brand/action, cyan = success/status,
+       coral = danger/priority warning. */
+    --violet: #8b6bff;
+    --cyan: #3fe8d8;
+    --coral: #ff5c4d;
+
+    /* Text colors from most to least prominent. */
+    --text: #f2f1f7;
+    --text-muted: #6f7285;
+    --text-dim: #4b4d5c;
+
+    /* Three-font system: a display font for the big title, a body font
+       for readable UI text, and a monospace font for "terminal" labels. */
+    --font-display: 'Orbitron', sans-serif;
+    --font-body: 'Space Grotesk', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  /* Make width/height calculations include padding and border everywhere,
+     which avoids surprise overflow when padding is added to a fixed width. */
+  * { box-sizing: border-box; }
+
+  /* Strip default browser margin/padding and set the page-wide dark background. */
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+  }
+
+  body {
+    min-height: 100vh;
+    font-family: var(--font-body);
+    color: var(--text);
+    /* clamp() gives responsive padding: it scales with viewport width but
+       stays within a min/max range so spacing works on mobile and desktop. */
+    padding: clamp(24px, 6vw, 96px) clamp(16px, 6vw, 64px);
+    /* Two layered background effects purely for atmosphere:
+       1) a soft violet glow radiating from the top of the page
+       2) a very faint repeating horizontal-line pattern (a "scanline" texture). */
+    background-image:
+      radial-gradient(circle at 50% -10%, rgba(139,107,255,0.16), transparent 55%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 3px);
+  }
+
+  /* Constrains and centers the whole app in a readable column. */
+  .console {
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  /* ---------- Header ---------- */
+
+  .console-header {
+    margin-bottom: clamp(48px, 8vw, 88px);
+  }
+
+  /* The small "System Status: Online" line above the title. */
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin: 0 0 20px 0;
+  }
+
+  /* The small glowing dot next to "System Status: Online" that pulses
+     to imply the system is live/active. */
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    background: var(--cyan);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--cyan);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+
+  /* Big "TASK://CONSOLE" heading. The gradient + background-clip:text trick
+     paints the text fill with a violet-to-cyan gradient instead of a solid color. */
+  .title {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: clamp(2.6rem, 8vw, 4.6rem);
+    letter-spacing: 0.02em;
+    line-height: 1;
+    margin: 0;
+    background: linear-gradient(100deg, var(--violet) 10%, var(--cyan) 90%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 60px rgba(139,107,255,0.25);
+  }
+
+  /* The "://" part of the title is styled separately so it stays a dim,
+     flat color instead of picking up the gradient fill above. */
+  .title-slash {
+    -webkit-text-fill-color: var(--text-dim);
+    color: var(--text-dim);
+    background: none;
+  }
+
+  /* "Directive tracking interface" tagline under the title. */
+  .subtitle {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    margin: 18px 0 0 0;
+  }
+
+  /* ---------- Panels (signature beveled shape) ---------- */
+
+  /* Cuts off the top-left and bottom-right corners of an element to create
+     the angular "sci-fi panel" look, applied to inputs, buttons, and cards
+     via the shared "bevel" class. */
+  .bevel {
+    clip-path: polygon(
+      18px 0, 100% 0, 100% calc(100% - 18px),
+      calc(100% - 18px) 100%, 0 100%, 0 18px
+    );
+  }
+
+  /* ---------- Command + filter bars ----------
+     "command-bar" holds the add-task input + Add button.
+     "filter-bar" holds the search input + Priority Only toggle. */
+
+  .command-bar, .filter-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .filter-bar { margin-bottom: clamp(48px, 8vw, 72px); }
+
+  /* Shared styling for both the "new directive" input and the search input,
+     including the prefix symbol (> or ⌕) shown inside the field. */
+  .prompt-field {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    padding: 18px 22px;
+  }
+
+  /* Glowing border when the field (or its child input) has focus. */
+  .prompt-field:focus-within {
+    border-color: var(--border-strong);
+    box-shadow: 0 0 0 1px var(--border-strong), 0 0 24px rgba(139,107,255,0.18);
+  }
+
+  /* The "> " or "⌕" symbol shown before the actual text input. */
+  .prompt-prefix {
+    font-family: var(--font-mono);
+    color: var(--violet);
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  /* Strip the native input's default look so it blends into the panel
+     (no browser border/background), letting .prompt-field's border show instead. */
+  .prompt-field input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 1.05rem;
+  }
+
+  .prompt-field input::placeholder { color: var(--text-dim); }
+
+  /* Base button style shared by "Add" and "Priority Only", outlined by default. */
+  .btn {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0 28px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+  }
+
+  .btn:hover { border-color: var(--border-strong); box-shadow: 0 0 20px rgba(139,107,255,0.18); }
+  /* Visible focus ring for keyboard navigation/accessibility. */
+  .btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+  /* Solid-fill variant used for the "Add" button. */
+  .btn-primary {
+    background: var(--violet);
+    border-color: var(--violet);
+    color: #0a0a10;
+    font-weight: 700;
+  }
+
+  .btn-primary:hover { box-shadow: 0 0 28px rgba(139,107,255,0.45); }
+
+  /* Applied to the "Priority Only" button (via JS) when that filter is
+     currently turned on, switching its outline/text to coral. */
+  .btn-ghost.is-active {
+    border-color: var(--coral);
+    color: var(--coral);
+    box-shadow: 0 0 20px rgba(255,92,77,0.22);
+  }
+
+  /* ---------- Divider ----------
+     The "Active Directives — 000" section-break line, made of a faded
+     horizontal rule on each side of a centered label. */
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  /* Generates the two fading line segments flanking the label using
+     empty pseudo-elements that grow to fill the remaining space (flex: 1). */
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border) 50%, transparent);
+  }
+
+  .divider-label {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  /* ---------- Directive list ----------
+     "Directive" is the app's themed name for a task/todo item. Each task
+     is rendered as one .directive-card, all stacked inside #todoList
+     (which has the .directive-list class). */
+
+  .directive-list {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  /* Default (normal/incomplete) task card look: a left accent stripe in
+     violet, with a subtle "rise" entrance animation when it's added. */
+  .directive-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--violet);
+    padding: 26px 30px;
+    animation: rise 0.35s ease both;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  }
+
+  .directive-card:hover { border-color: var(--border-strong); }
+
+  /* State modifier classes toggled by JS (see refreshState() in the script):
+     "is-important" -> left stripe turns coral (priority task)
+     "is-complete"  -> left stripe turns cyan and the whole card fades. */
+  .directive-card.is-important { border-left-color: var(--coral); }
+  .directive-card.is-complete { border-left-color: greenyellow; opacity: 0.55; }
+
+  /* Top row of each card: "DIRECTIVE-001 · EDITS: 0" on the left,
+     optional "PRIORITY" tag on the right. */
+  .directive-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    margin-bottom: 14px;
+  }
+
+  /* "PRIORITY" badge — hidden by default, only shown (below) on cards
+     that are currently marked important. */
+  .directive-tag {
+    color: var(--coral);
+    border: 1px solid rgba(255,92,77,0.4);
+    padding: 2px 8px;
+    display: none;
+  }
+
+  .directive-card.is-important .directive-tag { display: inline-block; }
+
+  /* The task's main text content. */
+  .directive-text {
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: clamp(1.15rem, 2.4vw, 1.45rem);
+    line-height: 1.35;
+    margin: 0 0 20px 0;
+    word-break: break-word;
+  }
+
+  /* Strikethrough styling applied to the task text once it's completed. */
+  .directive-card.is-complete .directive-text { text-decoration: line-through; text-decoration-color: var(--cyan); }
+
+  /* Row of small buttons (Edit / Delete / Complete / Priority) at the
+     bottom of each task card. */
+  .directive-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .action-btn {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .action-btn:hover { color: var(--text); border-color: var(--border-strong); }
+  .action-btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+  /* The "danger" modifier (used on Delete) turns coral on hover instead
+     of the default light text color. */
+  .action-btn.danger:hover { color: var(--coral); border-color: var(--coral); }
+  /* Disabled look, used to grey out the Edit button while an edit is in progress. */
+  .action-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* The inline edit form (text input + Save button) that gets inserted
+     into a card when its Edit button is clicked. */
+  .edit-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .edit-row input {
+    flex: 1;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    padding: 10px 14px;
+    outline: none;
+  }
+
+  /* ---------- Empty state ----------
+     Shown (via the "hidden" attribute being toggled in JS) when there are
+     no directives matching the current search/priority filter. */
+
+  .empty-state {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-align: center;
+    padding: 48px 0;
+    border: 1px dashed var(--border);
+  }
+
+  /* ---------- Footer ---------- */
+
+  .console-footer {
+    margin-top: clamp(48px, 8vw, 80px);
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    color: var(--text-dim);
+  }
+
+  /* Fades the status dot in and out repeatedly to simulate a "heartbeat". */
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Entrance animation for new task cards: fades in while sliding up
+     slightly from below its final position. */
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Small-screen layout: stack the input + button bars vertically instead
+     of side by side, and give buttons more comfortable tap padding. */
+  @media (max-width: 560px) {
+    .command-bar, .filter-bar { flex-direction: column; }
+    .btn { padding: 16px; }
+  }
+
+  /* Respect the OS-level "reduce motion" accessibility setting by turning
+     off the pulsing dot and card entrance animations. */
+  @media (prefers-reduced-motion: reduce) {
+    .status-dot, .directive-card { animation: none; }
+  }
+
+</style>
+</head>
+<body>
+
+<main class="console">
+
+  <!-- Decorative header: animated status dot, gradient title, subtitle. -->
+  <header class="console-header">
+    <p class="eyebrow"><span class="status-dot"></span>System Status: Online</p>
+    <h1 class="title">TASK<span class="title-slash">://</span>YOUR FAV TO DO LIST</h1>
+    <p class="subtitle">Directive tracking interface</p>
+  </header>
+
+  <!-- "Add a new task" row: text input + Add button. Wired up in the
+       script below via addTodo(), triggered by the button click or Enter key. -->
+  <section class="command-bar">
+    <div class="prompt-field bevel">
+      <span class="prompt-prefix">&gt;</span>
+      <input id="taskInput" type="text" placeholder="new directive..." autocomplete="off">
+    </div>
+    <button id="addBtn" class="btn btn-primary bevel">Add</button>
+  </section>
+
+  <!-- Search box (filters tasks live as you type) + toggle button that
+       restricts the visible list to priority-only tasks. -->
+  <section class="filter-bar">
+    <div class="prompt-field bevel">
+      <span class="prompt-prefix">⌕</span>
+      <input id="searchInput" type="text" placeholder="search directives..." autocomplete="off">
+    </div>
+    <button id="importantFilterBtn" class="btn btn-ghost bevel">Priority Only</button>
+  </section>
+
+  <!-- Section label showing the total directive count; the number inside
+       #countLabel is updated by applyFilters() in the script. -->
+  <div class="divider">
+    <span class="divider-label">Active Directives — <span id="countLabel">000</span></span>
+  </div>
+
+  <!-- Container that task cards get prepended into at runtime; starts
+       empty and is populated entirely by JavaScript (see rendertask()). -->
+  <section id="todoList" class="directive-list"></section>
+
+  <!-- Fallback message shown when the list (or the current filter) has
+       no visible tasks; toggled via the "hidden" attribute in applyFilters(). -->
+  <p class="empty-state bevel" id="emptyState" hidden>No matching directives</p>
+
+  <footer class="console-footer">// end of transmission</footer>
+
+</main>
+
+<script>
+// Wrap everything in an IIFE (Immediately Invoked Function Expression) so
+// none of these variables/functions leak into the global scope and clash
+// with anything else on the page.
+(function () {
+
+    // ---------- App state ----------
+
+    // The in-memory list of task objects. Each task looks like:
+    // { id, text, completed, important, edit }
+    // This array is the single source of truth; the DOM is just a
+    // rendering of it (kept in sync manually, not via a framework).
+    const todos = [];
+
+    // Maps a task's id -> its rendered <div class="directive-card"> element,
+    // so we can quickly find/update/remove the right DOM node for a given
+    // task without re-rendering the whole list every time.
+    const todoElements = new Map();
+
+    // Auto-incrementing id generator for new tasks (never reused, even
+    // after deletions, so ids stay unique for the life of the page).
+    let nextId = 1;
+
+    // Whether the "Priority Only" filter is currently active.
+    let showImportantOnly = false;
+
+    // ---------- Cached DOM references ----------
+    const todoInput = document.getElementById('taskInput');           // "new directive" text input
+    const addBtn = document.getElementById('addBtn');                 // "Add" button
+    const searchInput = document.getElementById('searchInput');       // search text input
+    const importantFilterBtn = document.getElementById('importantFilterBtn'); // "Priority Only" toggle button
+    const todoList = document.getElementById('todoList');             // container that task cards are inserted into
+    const emptyState = document.getElementById('emptyState');         // "No matching directives" message
+    const countLabel = document.getElementById('countLabel');         // "000" counter in the divider
+
+    // Formats a numeric id as a 3-digit, zero-padded string for display,
+    // e.g. pad(7) -> "007", matching the "DIRECTIVE-007" label style.
+    function pad(id) {
+        return String(id).padStart(3, '0');
+    }
+
+    // Key used to store the todos array in localStorage.
+    const STORAGE_KEY = 'todos';
+
+    // Logs the current todos array to the console and saves a JSON copy of
+    // it to localStorage. Called after every action that changes the data
+    // (add, delete, edit, complete, mark important) so the console and
+    // localStorage always reflect the latest state.
+    function persistTodos() {
+        console.log(todos);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+    }
+
+    // Recomputes which tasks should be visible based on the current search
+    // text and the "Priority Only" toggle, then shows/hides each task's
+    // card accordingly. This is re-run after every action that could change
+    // what's visible (add, delete, edit, filter change, search input, etc.)
+    // rather than filtering being baked into how cards are rendered.
+    function applyFilters() {
+
+        // Normalize the search text once (trimmed, lowercase) for a
+        // case-insensitive "contains" match against each task's text.
+        const searchterm = searchInput.value.trim().toLowerCase();
+
+        let visible = todos.filter(function (todo) {
+            return todo.text.toLowerCase().includes(searchterm);
+        });
+
+        // Further narrow down to only "important" tasks if that filter is on.
+        if (showImportantOnly) {
+            visible = visible.filter(function (todo) {
+                return todo.important;
+            });
+        }
+
+        // Collect just the ids of the tasks that survived filtering, so we
+        // can quickly check membership below.
+        const visibleIds = visible.map(function (todo) { return todo.id; });
+
+        let shown = 0;
+
+        // Walk every task (not just the visible ones) and toggle its card's
+        // display style directly, rather than adding/removing elements from
+        // the DOM — this keeps existing cards (and any in-progress edit
+        // state) intact while filtering.
+        todos.forEach(function (todo) {
+            const el = todoElements.get(todo.id);
+            const isVisible = visibleIds.includes(todo.id);
+            el.style.display = isVisible ? '' : 'none';
+            if (isVisible) shown++;
+        });
+
+        // Show the "No matching directives" message only when nothing is visible.
+        emptyState.hidden = shown !== 0;
+        // The counter always reflects the TOTAL number of tasks (not just
+        // the visible/filtered count).
+        countLabel.textContent = pad(todos.length);
+    }
+
+    // Builds the DOM for a single task ("directive") and inserts it into
+    // the page. Called once when a task is first added (from addTodo()).
+    // All elements are built with document.createElement rather than
+    // innerHTML, which avoids any HTML-injection risk from task text and
+    // keeps direct references to each piece for later updates.
+    function rendertask(todo) {
+
+        // Outer card wrapper — gets the "bevel" clipped-corner shape and
+        // has its is-complete/is-important classes toggled by refreshState().
+        const card = document.createElement('div');
+        card.className = 'directive-card bevel';
+
+        // Top meta row: "DIRECTIVE-00X · EDITS: N" label + hidden PRIORITY tag.
+        const meta = document.createElement('div');
+        meta.className = 'directive-meta';
+
+        const metaLeft = document.createElement('span');
+        metaLeft.textContent = 'DIRECTIVE-' + pad(todo.id) + ' · EDITS: ' + todo.edit;
+
+        const tag = document.createElement('span');
+        tag.className = 'directive-tag';
+        tag.textContent = 'PRIORITY';
+
+        meta.append(metaLeft, tag);
+
+        // The visible task text itself.
+        const p = document.createElement('p');
+        p.className = 'directive-text';
+        p.textContent = todo.text;
+
+        // Row of action buttons for this specific card.
+        const actions = document.createElement('div');
+        actions.className = 'directive-actions';
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'action-btn';
+        editBtn.textContent = 'Edit';
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'action-btn danger';
+        deleteBtn.textContent = 'Delete';
+
+        const completeBtn = document.createElement('button');
+        completeBtn.className = 'action-btn';
+        completeBtn.textContent = 'Complete';
+
+        const importantBtn = document.createElement('button');
+        importantBtn.className = 'action-btn';
+        importantBtn.textContent = 'Priority';
+
+        // Syncs the card's CSS state classes (is-complete / is-important)
+        // with the underlying todo object's flags. Called once up front
+        // and again any time completed/important changes, so the card's
+        // visual styling (strikethrough, colored stripe, PRIORITY tag)
+        // stays in sync with the data.
+        function refreshState() {
+            card.classList.toggle('is-complete', todo.completed);
+            card.classList.toggle('is-important', todo.important);
+        }
+
+        refreshState();
+
+        // EDIT
+        // Clicking "Edit" builds and inserts a temporary inline form
+        // (text input + Save button) just below the meta row, pre-filled
+        // with the task's current text, and disables the Edit button while
+        // that form is open (so it can't be opened twice at once).
+        editBtn.addEventListener('click', function () {
+
+            const editRow = document.createElement('div');
+            editRow.className = 'edit-row';
+
+            const editInput = document.createElement('input');
+            editInput.value = todo.text;
+
+            const saveBtn = document.createElement('button');
+            saveBtn.className = 'action-btn';
+            saveBtn.textContent = 'Save';
+
+            editRow.append(editInput, saveBtn);
+            // Insert the edit row right after the meta row (i.e. above the
+            // task text), rather than appending it to the end of the card.
+            card.insertBefore(editRow, meta.nextSibling);
+            editInput.focus();
+
+            editBtn.disabled = true;
+
+            // Clicking "Save" commits the edited text back onto the todo
+            // object, updates the visible text and edit counter, removes
+            // the temporary edit row, and re-enables the Edit button.
+            saveBtn.addEventListener('click', function () {
+
+                const newTask = editInput.value.trim();
+                // Ignore saves with empty/whitespace-only text — silently
+                // do nothing rather than deleting the task's content.
+                if (newTask === '') return;
+
+                p.textContent = newTask;
+                todo.text = newTask;
+                todo.edit++;
+                metaLeft.textContent = 'DIRECTIVE-' + pad(todo.id) + ' · EDITS: ' + todo.edit;
+
+                editRow.remove();
+                editBtn.disabled = false;
+
+                // Text changed, so re-run search filtering in case the new
+                // text now matches (or no longer matches) the search box.
+                applyFilters();
+                // Data changed (text + edit count) — log/save the updated array.
+                persistTodos();
+            });
+        });
+
+        // DELETE
+        // Removes the card from the page, drops its entry from the
+        // id -> element map, and removes the matching task from the
+        // todos array (by finding its index, since ids aren't array indexes).
+        deleteBtn.addEventListener('click', function () {
+            card.remove();
+            todoElements.delete(todo.id);
+
+            const index = todos.findIndex(function (t) { return t.id === todo.id; });
+            if (index !== -1) todos.splice(index, 1);
+
+            // Recount/re-check the empty state now that a task is gone.
+            applyFilters();
+            // Data changed (task removed) — log/save the updated array.
+            persistTodos();
+        });
+
+        // COMPLETE
+        // One-way toggle: marks the task completed (there's no separate
+        // "un-complete" button) and refreshes the card's visual state.
+        completeBtn.addEventListener('click', function () {
+            todo.completed = true;
+            refreshState();
+            // Data changed (completed flag) — log/save the updated array.
+            persistTodos();
+        });
+
+        // IMPORTANT
+        // One-way toggle: marks the task as priority/important. Also
+        // re-applies filters immediately in case "Priority Only" is
+        // active, so newly-flagged tasks appear without needing another action.
+        importantBtn.addEventListener('click', function () {
+            todo.important = true;
+            refreshState();
+            applyFilters();
+            // Data changed (important flag) — log/save the updated array.
+            persistTodos();
+        });
+
+        // Assemble the card: action buttons row, then meta/text/actions
+        // into the card itself.
+        actions.append(editBtn, deleteBtn, completeBtn, importantBtn);
+        card.append(meta, p, actions);
+
+        // New tasks are added to the TOP of the visible list (prepend),
+        // matching todos.unshift() in addTodo() below so the DOM order
+        // stays consistent with the array order (newest first).
+        todoList.prepend(card);
+        todoElements.set(todo.id, card);
+    }
+
+    // Reads the "new directive" input, creates a new task object with
+    // default state, adds it to the front of the todos array, renders it,
+    // and resets the input for the next entry.
+    function addTodo() {
+
+        const task = todoInput.value.trim();
+        // Ignore empty/whitespace-only submissions.
+        if (!task) return;
+
+        const todo = {
+            id: nextId++,        // unique, ever-increasing id
+            text: task,
+            completed: false,
+            important: false,
+            edit: 0               // number of times this task's text has been edited
+        };
+
+        // unshift puts the newest task first in the array, matching the
+        // prepend() used in rendertask() so array order mirrors DOM order.
+        todos.unshift(todo);
+        rendertask(todo);
+        applyFilters();
+        // Data changed (task added) — log/save the updated array.
+        persistTodos();
+
+        // Clear the input and return focus to it so the user can
+        // immediately type the next task without re-clicking.
+        todoInput.value = '';
+        todoInput.focus();
+    }
+
+    // ---------- Top-level event wiring ----------
+
+    addBtn.addEventListener('click', addTodo);
+
+    // Let pressing Enter in the input submit a new task too, not just clicking Add.
+    todoInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') addTodo();
+    });
+
+    // Live-filter the list on every keystroke in the search box.
+    searchInput.addEventListener('input', applyFilters);
+
+    // Toggle the "Priority Only" filter on/off: flip the boolean, update
+    // the button's active styling and label text, then re-filter the list.
+    importantFilterBtn.addEventListener('click', function () {
+        showImportantOnly = !showImportantOnly;
+        importantFilterBtn.classList.toggle('is-active', showImportantOnly);
+        importantFilterBtn.textContent = showImportantOnly ? 'Show All' : 'Priority Only';
+        applyFilters();
+    });
+
+    // Run once on page load to set the initial "000" count and empty-state
+    // visibility (relevant if this script is ever extended to load saved
+    // tasks, since right now the list always starts empty).
+    applyFilters();
+
+})();
+</script>
+
+</body>
+</html>
